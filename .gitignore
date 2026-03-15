@@ -1,0 +1,20 @@
+# Binary
+hamburg-rails
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+*.test
+*.out
+coverage.html
+
+# Env
+.env

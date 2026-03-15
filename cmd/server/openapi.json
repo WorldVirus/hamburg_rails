@@ -1,0 +1,277 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hamburg Rails API",
+    "description": "REST service for routing queries on a directed, weighted graph of towns.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080" }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "status": { "type": "string", "example": "ok" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph": {
+      "get": {
+        "summary": "Get current graph",
+        "responses": {
+          "200": {
+            "description": "Current edge list and counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "edges": { "type": "string", "example": "AB5, BC4" },
+                    "nodeCount": { "type": "integer" },
+                    "edgeCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/graph": {
+      "post": {
+        "summary": "Load or replace graph",
+        "description": "Fully replaces the in-memory graph. Body is a plain-text edge list.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": { "type": "string", "example": "AB5, BC4, CD8, DC8, DE6, AD5, CE2, EB3, AE7" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Graph loaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "nodeCount": { "type": "integer" },
+                    "edgeCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid edge list" }
+        }
+      }
+    },
+    "/routes/distance": {
+      "post": {
+        "summary": "Calculate fixed route distance",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": { "type": "array", "items": { "type": "string" }, "example": ["A", "B", "C"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Distance calculated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "distance": { "type": "integer" } }
+                }
+              }
+            }
+          },
+          "404": { "description": "No such route" }
+        }
+      }
+    },
+    "/routes/count-by-stops": {
+      "post": {
+        "summary": "Count trips by number of stops",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "maxStops"],
+                "properties": {
+                  "from": { "type": "string", "example": "C" },
+                  "to": { "type": "string", "example": "C" },
+                  "maxStops": { "type": "integer", "example": 3 },
+                  "minStops": { "type": "integer", "default": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trip count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "count": { "type": "integer" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routes/count-by-distance": {
+      "post": {
+        "summary": "Count trips by maximum distance",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "maxDistance"],
+                "properties": {
+                  "from": { "type": "string", "example": "C" },
+                  "to": { "type": "string", "example": "C" },
+                  "maxDistance": { "type": "integer", "example": 30 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trip count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "count": { "type": "integer" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routes/shortest": {
+      "get": {
+        "summary": "Find shortest path between two towns",
+        "parameters": [
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shortest path found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "distance": { "type": "integer" },
+                    "path": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "No path exists" }
+        }
+      }
+    },
+    "/routes/search": {
+      "post": {
+        "summary": "Search routes with constraints",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to"],
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "constraints": {
+                    "type": "object",
+                    "properties": {
+                      "maxStops": { "type": "integer" },
+                      "maxDistance": { "type": "integer" },
+                      "distinctNodes": { "type": "boolean", "default": false }
+                    }
+                  },
+                  "limit": { "type": "integer", "default": 10 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching routes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "routes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": { "type": "array", "items": { "type": "string" } },
+                          "distance": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus-style metrics",
+        "responses": {
+          "200": {
+            "description": "Plain text metrics",
+            "content": { "text/plain": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    }
+  }
+}
